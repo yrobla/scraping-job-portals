@@ -1,0 +1,25 @@
+from bs4 import BeautifulSoup
+from boards import helpers
+
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+class InfojobsPortalParser:
+    def __init__(self, url):
+        self.url = url
+
+    def get_jobs(self):
+        browser = helpers.download_url(self.url)
+
+        try:
+            element = WebDriverWait(browser, 3).until(EC.presence_of_element_located((By.ID,  'app')))
+        except TimeoutException:
+            browser.find_element_by_class_name("geetest_radar_tip_content").click()
+
+        if browser is not None:
+            # now collect all information
+            search = browser.find_element_by_xpath('//*[@id="app"]/div/div/div[2]/div/div/div/div/div[2]/div/ul/li[1]/div/div[2]/div/h2/a')
+            if search is not None:
+                print(search)
