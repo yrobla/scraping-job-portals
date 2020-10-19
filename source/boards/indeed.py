@@ -1,4 +1,5 @@
-from datetime import datetime
+from bs4 import BeautifulSoup
+from datetime import datetime, timedelta
 from math import floor
 
 from boards import helpers
@@ -7,15 +8,20 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+import re
+
 CLASS_JOB_TITLE="jobsearch-JobInfoHeader-title"
 XPATH_JOB_LOCATION="(//div[contains(@class, 'jobsearch-InlineCompanyRating')]/div)[last()]"
 XPATH_JOB_PRICE="//div[contains(@class, 'jobsearch-JobMetadataHeader-item')]/span"
 ID_JOB_DESCRIPTION="jobDescriptionText"
+CLASS_JOB_FOOTER="jobsearch-JobMetadataFooter"
 XPATH_JOB_LINK="/html/body/table[2]/tbody/tr/td/table/tbody/tr/td[1]/div[*]/h2/a"
 ID_PAGE_LOADED="resultsBodyContent"
 ID_TOTAL_JOBS="searchCountPages"
 XPATH_DETAIL_LOADED="/html/body/div[1]/div[2]/div[3]"
 JOB_PORTAL="indeed"
+ITEMS_PER_PAGE=10
+MAX_PAGES=70
 
 class IndeedPortalParser:
     def __init__(self, url):
@@ -46,6 +52,10 @@ class IndeedPortalParser:
             location = self.retrieve_element("xpath", XPATH_JOB_LOCATION)
             price = self.retrieve_element("xpath", XPATH_JOB_PRICE)
             description = self.retrieve_element("id", ID_JOB_DESCRIPTION)
+            date_footer = self.retrieve_element("class", CLASS_JOB_FOOTER)
+            
+            soup = BeautifulSoup(date_footer, features="html.parser")
+            date_footer = soup.get_text()
 
             # cleanup title and description
             job_detail["title"] = helpers.cleanup_text(title)
@@ -89,9 +99,17 @@ class IndeedPortalParser:
                 else:
                     job_detail["price_start"] = helpers.parse_number(price_items[0].strip())
 
-            # add date and portal
-            job_detail["date"]=datetime.today().strftime('%Y-%m-%d')
+            # just get the number
+            days_ago = re.findall('\d+', date_footer )
+            days_to_substract = 0
+            if days_ago:
+                if len(days_ago)>0:
+                    days_to_substract = int(days_ago[0])
+            job_detail["date"]=(datetime.today() - timedelta(days=days_to_substract)).strftime('%Y-%m-%d')
+
+            # add portal
             job_detail["portal"]=JOB_PORTAL
+            self.browser.quit()
             return job_detail
 
         return None
@@ -131,7 +149,9 @@ class IndeedPortalParser:
 
     def get_jobs(self):
         total_jobs = self.get_total_jobs(self.url)
-        num_pages = floor(total_jobs/10)
+        num_pages = floor(total_jobs/ITEMS_PER_PAGE)
+        if num_pages > MAX_PAGES:
+            num_pages=MAX_PAGES
 
         job_links = []
         for i in range(0,num_pages):
