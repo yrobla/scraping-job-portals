@@ -55,12 +55,10 @@ def cleanup_text(text):
     # prepare a regex para el filtrado de caracteres
     re_punc = re.compile('[%s]' % re.escape(string.punctuation))
     # eliminar la puntuación de cada palabra
-    stripped = [re_punc.sub(' ', w) for w in tokens]
-    # eliminar los tokens restantes que no estén en orden alfabético
-    words = [word for word in stripped if word.isalpha()]
+    words = [re_punc.sub(' ', w).strip() for w in tokens]
     # filtrar las palabras de interrupción
     stop_words = set(stopwords.words('english'))
-    words = [w for w in words if not w in stop_words]
+    words = [w.strip() for w in words if not w in stop_words]
     stop_words = set(stopwords.words('spanish'))
-    words = [w for w in words if not w in stop_words]
+    words = [w.strip() for w in words if not w in stop_words]
     return " ".join(words[:255])

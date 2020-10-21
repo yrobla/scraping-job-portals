@@ -1,14 +1,14 @@
-from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from math import floor
+import re
+
+from bs4 import BeautifulSoup
 
 from boards import helpers
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
-import re
 
 CLASS_JOB_TITLE="jobsearch-JobInfoHeader-title"
 XPATH_JOB_LOCATION="(//div[contains(@class, 'jobsearch-InlineCompanyRating')]/div)[last()]"
@@ -53,7 +53,7 @@ class IndeedPortalParser:
             price = self.retrieve_element("xpath", XPATH_JOB_PRICE)
             description = self.retrieve_element("id", ID_JOB_DESCRIPTION)
             date_footer = self.retrieve_element("class", CLASS_JOB_FOOTER)
-            
+
             soup = BeautifulSoup(date_footer, features="html.parser")
             date_footer = soup.get_text()
 
@@ -67,11 +67,16 @@ class IndeedPortalParser:
             if location is not None:
                 items_location=location.split(",")
                 if len(items_location)==2:
-                    job_detail["city"] = items_location[0]
+                    city_items = items_location[0].strip().split(" ")
+                    if len(city_items)==2:
+                        job_detail["city"] = items_location[1].strip()
+                    else:
+                        job_detail["city"] = items_location[0].strip()
+
                     province = items_location[1].replace("provincia", "")
                     job_detail["province"] = province.strip()
                 else:
-                    job_detail["province"] = items_location[0]
+                    job_detail["province"] = items_location[0].strip()
 
             # price
             job_detail["price_start"] = None
@@ -87,6 +92,9 @@ class IndeedPortalParser:
                 elif price.endswith("al año"):
                     job_detail["price_interval"] = "yearly"
                     price = price.replace("al año", "")
+                elif price.endswith("al día"):
+                    job_detail["price_interval"] = "daily"
+                    price = price.replace("al día", "")
                 elif price.endswith("por hora"):
                     job_detail["price_interval"] = "hourly"
                     price = price.replace("por hora", "")
@@ -100,12 +108,13 @@ class IndeedPortalParser:
                     job_detail["price_start"] = helpers.parse_number(price_items[0].strip())
 
             # just get the number
-            days_ago = re.findall('\d+', date_footer )
+            days_ago = re.findall(r"\d+", date_footer )
             days_to_substract = 0
             if days_ago:
                 if len(days_ago)>0:
                     days_to_substract = int(days_ago[0])
-            job_detail["date"]=(datetime.today() - timedelta(days=days_to_substract)).strftime('%Y-%m-%d')
+            job_detail["date"]=(
+                    datetime.today() - timedelta(days=days_to_substract)).strftime('%Y-%m-%d')
 
             # add portal
             job_detail["portal"]=JOB_PORTAL
