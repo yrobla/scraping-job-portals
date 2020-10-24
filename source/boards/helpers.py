@@ -47,7 +47,7 @@ def parse_number(number, currency="€", units_separator=".", decimal_separator=
 
 def cleanup_text(text):
     '''Strips html and normalizes text using language processing'''
-    final_text = BeautifulSoup(text, "lxml").text
+    final_text = BeautifulSoup(text, "lxml").get_text(separator=' ')
     # convirtiendo en palabras
     tokens = word_tokenize(final_text)
     # convertir a minúsculas

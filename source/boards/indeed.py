@@ -65,6 +65,8 @@ class IndeedPortalParser:
             job_detail["city"] = None
             job_detail["province"] = None
             if location is not None:
+                location = re.sub(r'\d+', '', location)
+
                 items_location=location.split(",")
                 if len(items_location)==2:
                     city_items = items_location[0].strip().split(" ")
@@ -98,6 +100,9 @@ class IndeedPortalParser:
                 elif price.endswith("por hora"):
                     job_detail["price_interval"] = "hourly"
                     price = price.replace("por hora", "")
+                elif price.endswith("por semana"):
+                    job_detail["price_interval"] = "weekly"
+                    price = price.replace("por semana", "")
 
                 # now check range
                 price_items = price.split("-")

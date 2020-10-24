@@ -10,7 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 XPATH_JOB_TITLE="//h1[@class='topcard__title']"
 XPATH_JOB_LOCATION="//span[contains(@class, 'topcard__flavor--bullet')]"
 CLASS_JOB_DESCRIPTION="show-more-less-html__markup"
-XPATH_JOB_DATE="//span[@class='topcard__flavor--metadata posted-time-ago__text']"
+XPATH_JOB_DATE="//span[contains(@class, 'topcard__flavor--metadata posted-time-ago__text')]"
 XPATH_JOB_EXPERTISE="/html/body/main/section[1]/section[3]/ul/li[1]/span"
 XPATH_JOB_TYPE="/html/body/main/section[1]/section[3]/ul/li[2]/span"
 XPATH_JOB_FUNCTIONS="//li[@class='job-criteria__item'][3]/span"
@@ -71,7 +71,11 @@ class LinkedInPortalParser:
             job_date = self.retrieve_element("xpath", XPATH_JOB_DATE)
 
             # cleanup title and description
-            job_detail["title"] = helpers.cleanup_text(title)
+            if title is not None:
+                job_detail["title"] = helpers.cleanup_text(title)
+            else:
+                return None
+
             if description is not None:
                 job_detail["description"] = helpers.cleanup_text(description)
             else:
@@ -81,9 +85,14 @@ class LinkedInPortalParser:
             job_detail["city"] = None
             job_detail["province"] = None
             if location is not None:
-                items_location=location.split(" ")
-                if len(items_location)>0:
+                location = re.sub(r'\d+', '', location)
+
+                items_location=location.split(",")
+                if len(items_location)==1:
                     job_detail["province"] = items_location[0].strip()
+                elif len(items_location)>=2:
+                    job_detail["city"] = items_location[0].strip()
+                    job_detail["province"] = items_location[1].strip()
 
             # no price, nearly any offer shows it
             job_detail["price_start"] = None

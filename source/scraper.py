@@ -13,6 +13,7 @@ import configparser
 import csv
 
 from boards import indeed, linkedin
+from xvfbwrapper import Xvfb
 
 # default values for portals
 VALID_PORTALS = [ 'indeed', 'linkedin' ]
@@ -47,6 +48,9 @@ class JobPortalScraper():
         self.all_portals = VALID_PORTALS
 
     def start(self):
+        display = Xvfb()
+        display.start()
+
         # check the portals to use
         if self.portal is None:
             portals = self.all_portals
@@ -56,10 +60,6 @@ class JobPortalScraper():
         # iterate for all portals and start its own parser
         jobs_all_portals = []
         for portal in portals:
-            #if portal == INFOJOBS_PORTAL:
-            #    parser_infojobs = infojobs.InfojobsPortalParser(self.infojobs_url)
-            #    jobs = parser_infojobs.get_jobs()
-
             if portal == INDEED_PORTAL:
                 parser_indeed = indeed.IndeedPortalParser(self.indeed_url)
                 jobs = parser_indeed.get_jobs()
@@ -85,7 +85,7 @@ class JobPortalScraper():
                     "date": item["date"], "expertise": item.get("expertise", ""),
                     "type": item.get("type", ""), "functions": item.get("functions", ""),
                     "sectors": item.get("sectors", ""), "portal": item["portal"]})
-
+        display.stop()
 
 if __name__ == '__main__':
     args = parse_args()
